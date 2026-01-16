@@ -6,7 +6,9 @@ import { SessionTimer } from "./session-timer"
 import { SessionSummary } from "./session-summary"
 import { LanguageSelector } from "./language-selector"
 import { useLanguage } from "../context/language-context"
+import { useAuth } from "../context/auth-context"
 import { currencies, Currency } from "../i18n"
+import { createPoopSession, updateUserEarnings } from "../lib/supabase-client"
 
 type AppState = "input" | "session" | "summary"
 
@@ -14,20 +16,34 @@ const STORAGE_KEY = "poop-salary-lifetime"
 
 export function PoopSalaryApp() {
   const { t } = useLanguage()
+  const { user, profile, refreshProfile } = useAuth()
   const [appState, setAppState] = useState<AppState>("input")
   const [annualSalary, setAnnualSalary] = useState<number>(0)
   const [currency, setCurrency] = useState<Currency>(currencies[0])
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [earnedMoney, setEarnedMoney] = useState(0)
   const [lifetimeEarnings, setLifetimeEarnings] = useState(0)
+  const [savingSession, setSavingSession] = useState(false)
 
-  // Cargar lifetime del localStorage al iniciar
+  // Cargar datos iniciales
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
       setLifetimeEarnings(parseFloat(stored))
     }
-  }, [])
+
+    // Si hay usuario autenticado, usar su moneda y datos del perfil
+    if (user && profile) {
+      const userCurrency = currencies.find((c) => c.code === profile.currency_code) || currencies[0]
+      setCurrency(userCurrency)
+      setLifetimeEarnings(profile.total_earnings)
+      
+      // Cargar el salario anual del perfil si existe
+      if (profile.annual_salary && profile.annual_salary > 0) {
+        setAnnualSalary(profile.annual_salary)
+      }
+    }
+  }, [user, profile])
 
   // Calculate per-second rate (2080 work hours/year = 7,488,000 seconds)
   const perSecondRate = annualSalary / (2080 * 60 * 60)
@@ -56,13 +72,32 @@ export function PoopSalaryApp() {
     }
   }, [annualSalary])
 
-  const handleEndSession = useCallback(() => {
-    // Guardar en lifetime y localStorage
+  const handleEndSession = useCallback(async () => {
     const newLifetime = lifetimeEarnings + earnedMoney
     setLifetimeEarnings(newLifetime)
     localStorage.setItem(STORAGE_KEY, newLifetime.toString())
+
+    // Guardar en Supabase si el usuario está autenticado
+    if (user && profile) {
+      setSavingSession(true)
+      try {
+        await createPoopSession(
+          user.id,
+          elapsedSeconds,
+          earnedMoney,
+          profile.currency_code
+        )
+        await updateUserEarnings(user.id, earnedMoney, profile.currency_code)
+        await refreshProfile()
+      } catch (error) {
+        console.error("Error saving session to Supabase:", error)
+      } finally {
+        setSavingSession(false)
+      }
+    }
+
     setAppState("summary")
-  }, [lifetimeEarnings, earnedMoney])
+  }, [lifetimeEarnings, earnedMoney, user, profile, elapsedSeconds, refreshProfile])
 
   const handleReset = useCallback(() => {
     setAppState("input")
@@ -81,6 +116,11 @@ export function PoopSalaryApp() {
           <span className="inline-block animate-bounce">💩</span> {t.title}
         </h1>
         <p className="text-muted-foreground text-lg md:text-xl">{t.subtitle}</p>
+        {user && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {t.loggedInAs} {user.email}
+          </p>
+        )}
       </div>
 
       {/* Main Content */}
@@ -91,7 +131,8 @@ export function PoopSalaryApp() {
             currency={currency}
             onSalaryChange={setAnnualSalary} 
             onCurrencyChange={setCurrency}
-            onStart={handleStartSession} 
+            onStart={handleStartSession}
+            isReadOnly={!!user}
           />
         )}
 
@@ -111,6 +152,7 @@ export function PoopSalaryApp() {
             lifetimeEarnings={lifetimeEarnings}
             currencySymbol={currency.symbol}
             onReset={handleReset} 
+            isSaving={savingSession}
           />
         )}
       </div>

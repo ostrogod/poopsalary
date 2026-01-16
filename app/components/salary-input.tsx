@@ -9,9 +9,10 @@ interface SalaryInputProps {
   onSalaryChange: (value: number) => void
   onCurrencyChange: (currency: Currency) => void
   onStart: () => void
+  isReadOnly?: boolean
 }
 
-export function SalaryInput({ salary, currency, onSalaryChange, onCurrencyChange, onStart }: SalaryInputProps) {
+export function SalaryInput({ salary, currency, onSalaryChange, onCurrencyChange, onStart, isReadOnly = false }: SalaryInputProps) {
   const { t } = useLanguage()
 
   return (
@@ -28,7 +29,8 @@ export function SalaryInput({ salary, currency, onSalaryChange, onCurrencyChange
                 const selected = currencies.find(c => c.code === e.target.value)
                 if (selected) onCurrencyChange(selected)
               }}
-              className="h-16 px-3 bg-muted border-2 border-border focus:border-primary rounded-2xl font-mono outline-none text-foreground cursor-pointer"
+              disabled={isReadOnly}
+              className="h-16 px-3 bg-muted border-2 border-border focus:border-primary rounded-2xl font-mono outline-none text-foreground cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {currencies.map(c => (
                 <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
@@ -41,11 +43,12 @@ export function SalaryInput({ salary, currency, onSalaryChange, onCurrencyChange
                 placeholder={t.salaryPlaceholder}
                 value={salary || ""}
                 onChange={(e) => onSalaryChange(Number(e.target.value))}
-                className="w-full text-2xl h-16 px-4 bg-muted border-2 border-border focus:border-primary rounded-2xl font-mono outline-none"
+                disabled={isReadOnly}
+                className="w-full text-2xl h-16 px-4 bg-muted border-2 border-border focus:border-primary rounded-2xl font-mono outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">{t.salaryHint}</p>
+          <p className="text-sm text-muted-foreground">{isReadOnly ? "Edita estos valores en la barra lateral" : t.salaryHint}</p>
         </div>
 
         {/* Giant Start Button */}

@@ -2,6 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Nunito, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { AuthProvider } from "./context/auth-context"
+import { LanguageProvider } from "./context/language-context"
+import { Sidebar } from "./components/sidebar"
 import "./globals.css"
 
 const _nunito = Nunito({ subsets: ["latin"] })
@@ -38,8 +41,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased ${_nunito.className}`}>
-        {children}
-        <Analytics />
+        <LanguageProvider>
+          <AuthProvider>
+            <div className="flex">
+              <Sidebar />
+              <div className="flex-1">
+                {children}
+                <Analytics />
+              </div>
+            </div>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   )

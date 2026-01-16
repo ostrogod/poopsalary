@@ -10,9 +10,10 @@ interface SessionSummaryProps {
   lifetimeEarnings: number
   currencySymbol: string
   onReset: () => void
+  isSaving?: boolean
 }
 
-export function SessionSummary({ elapsedSeconds, earnedMoney, lifetimeEarnings, currencySymbol, onReset }: SessionSummaryProps) {
+export function SessionSummary({ elapsedSeconds, earnedMoney, lifetimeEarnings, currencySymbol, onReset, isSaving }: SessionSummaryProps) {
   const { t } = useLanguage()
 
   const randomMessage = useMemo(() => {
@@ -98,10 +99,11 @@ export function SessionSummary({ elapsedSeconds, earnedMoney, lifetimeEarnings, 
         {/* Reset Button */}
         <button
           onClick={onReset}
-          className="w-full py-4 px-8 bg-primary text-primary-foreground font-bold text-lg rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+          disabled={isSaving}
+          className="w-full py-4 px-8 bg-primary text-primary-foreground font-bold text-lg rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>🔄</span>
-          {t.newSession}
+          {isSaving ? "Guardando..." : t.newSession}
         </button>
       </div>
     </div>
