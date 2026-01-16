@@ -1,10 +1,20 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables")
+// Lazy validation - only check when actually used
+let supabaseValidated = false
+
+function ensureSupabaseConfig() {
+  if (!supabaseValidated) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error(
+        "Missing Supabase environment variables. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your environment."
+      )
+    }
+    supabaseValidated = true
+  }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -32,6 +42,7 @@ export interface PoopSession {
 
 // Funciones de autenticación
 export async function signUp(email: string, password: string) {
+  ensureSupabaseConfig()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -44,6 +55,7 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signIn(email: string, password: string) {
+  ensureSupabaseConfig()
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -56,11 +68,13 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  ensureSupabaseConfig()
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }
 
 export async function getCurrentUser() {
+  ensureSupabaseConfig()
   const {
     data: { user },
     error,
