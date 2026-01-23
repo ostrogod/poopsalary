@@ -6,12 +6,13 @@ import { useAuth } from "../context/auth-context"
 import { useLanguage } from "../context/language-context"
 import { currencies } from "../i18n"
 import { getUserPoopSessions, PoopSession, updateCurrencyCode, updateAnnualSalary } from "../lib/supabase-client"
+import { ForgotPassword } from "./forgot-password"
 
 export function Sidebar() {
   const { user, profile, signUp, signIn, signOut, refreshProfile } = useAuth()
   const { t } = useLanguage()
   const [isOpen, setIsOpen] = useState(false)
-  const [isAuthMode, setIsAuthMode] = useState<"login" | "signup">("login")
+  const [isAuthMode, setIsAuthMode] = useState<"login" | "signup" | "forgot">("login")
   const [activeTab, setActiveTab] = useState<"profile" | "history">("profile")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -162,18 +163,18 @@ export function Sidebar() {
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
-      {/* Overlay */}
+      {/* Overlay - Solo en móvil */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-20 pointer-events-auto"
+          className="fixed inset-0 z-20 bg-black/50 pointer-events-auto md:hidden"
           onClick={() => setIsOpen(false)}
-          style={{ backgroundColor: "transparent" }}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen w-80 bg-card border-r border-border p-6 shadow-xl transition-transform duration-300 z-40 flex flex-col ${
+        style={{ backgroundColor: "#fff8f0" }}
+        className={`fixed left-0 top-0 h-screen w-72 md:w-80 border-r border-border p-6 shadow-xl transition-transform duration-300 z-40 flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -367,120 +368,137 @@ export function Sidebar() {
             </div>
           ) : (
             // Usuario no autenticado
-            <div className="space-y-6">
-              {/* Toggle entre Login y Signup */}
-              <div className="flex gap-2 bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => {
-                    setIsAuthMode("login")
-                    setError("")
-                  }}
-                  className={`flex-1 py-2 px-3 rounded-md font-semibold transition-all duration-200 text-sm cursor-pointer ${
-                    isAuthMode === "login"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.login || "Iniciar Sesión"}
-                </button>
-                <button
-                  onClick={() => {
-                    setIsAuthMode("signup")
-                    setError("")
-                  }}
-                  className={`flex-1 py-2 px-3 rounded-md font-semibold transition-all duration-200 text-sm cursor-pointer ${
-                    isAuthMode === "signup"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.signup || "Registrarse"}
-                </button>
-              </div>
+            <>
+              {isAuthMode === "forgot" ? (
+                <ForgotPassword onBack={() => setIsAuthMode("login")} />
+              ) : (
+                <div className="space-y-6">
+                  {/* Toggle entre Login y Signup */}
+                  <div className="flex gap-2 bg-muted rounded-lg p-1">
+                    <button
+                      onClick={() => {
+                        setIsAuthMode("login")
+                        setError("")
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-md font-semibold transition-all duration-200 text-sm cursor-pointer ${
+                        isAuthMode === "login"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t.login || "Iniciar Sesión"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAuthMode("signup")
+                        setError("")
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-md font-semibold transition-all duration-200 text-sm cursor-pointer ${
+                        isAuthMode === "signup"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t.signup || "Registrarse"}
+                    </button>
+                  </div>
 
-              {/* Formulario */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Email */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    required
-                    className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200"
-                  />
-                </div>
-
-                {/* Contraseña */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Contraseña</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200"
-                  />
-                </div>
-
-                {/* Selector de moneda para signup */}
-                {isAuthMode === "signup" && (
-                  <>
+                  {/* Formulario */}
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Email */}
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">{t.currency}</label>
-                      <select
-                        value={selectedCurrency}
-                        onChange={(e) => setSelectedCurrency(e.target.value)}
-                        className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200 cursor-pointer"
-                      >
-                        {currencies.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.symbol} {c.code} - {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">{t.salaryLabel}</label>
+                      <label className="text-sm font-semibold text-foreground">Email</label>
                       <input
-                        type="number"
-                        value={annualSalary}
-                        onChange={(e) => setAnnualSalary(e.target.value)}
-                        placeholder={t.salaryPlaceholder}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        required
                         className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200"
                       />
                     </div>
-                  </>
-                )}
 
-                {/* Mensaje de error */}
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
+                    {/* Contraseña */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">Contraseña</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200"
+                      />
+                    </div>
 
-                {/* Botón submit */}
-                <button
-                  type="submit"
-                  disabled={loading || !email || !password}
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:bg-primary/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4" />
-                  {loading
-                    ? isAuthMode === "login"
-                      ? t.signingIn || "Iniciando..."
-                      : t.signingUp || "Registrando..."
-                    : isAuthMode === "login"
-                      ? t.login || "Iniciar Sesión"
-                      : t.signup || "Registrarse"}
-                </button>
-              </form>
-            </div>
+                    {/* Enlace olvidé contraseña (solo en login) */}
+                    {isAuthMode === "login" && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAuthMode("forgot")}
+                        className="text-xs text-primary hover:text-primary/80 font-semibold cursor-pointer transition-colors"
+                      >
+                        {t.forgotPassword}
+                      </button>
+                    )}
+
+                    {/* Selector de moneda para signup */}
+                    {isAuthMode === "signup" && (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground">{t.currency}</label>
+                          <select
+                            value={selectedCurrency}
+                            onChange={(e) => setSelectedCurrency(e.target.value)}
+                            className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200 cursor-pointer"
+                          >
+                            {currencies.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.symbol} {c.code} - {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold text-foreground">{t.salaryLabel}</label>
+                          <input
+                            type="number"
+                            value={annualSalary}
+                            onChange={(e) => setAnnualSalary(e.target.value)}
+                            placeholder={t.salaryPlaceholder}
+                            className="w-full px-4 py-2 bg-muted border-2 border-border rounded-lg focus:border-primary outline-none transition-colors duration-200"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Mensaje de error */}
+                    {error && (
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-600">
+                        {error}
+                      </div>
+                    )}
+
+                    {/* Botón submit */}
+                    <button
+                      type="submit"
+                      disabled={loading || !email || !password}
+                      className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:bg-primary/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      {loading
+                        ? isAuthMode === "login"
+                          ? t.signingIn || "Iniciando..."
+                          : t.signingUp || "Registrando..."
+                        : isAuthMode === "login"
+                          ? t.login || "Iniciar Sesión"
+                          : t.signup || "Registrarse"}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </>
           )}
         </div>
 

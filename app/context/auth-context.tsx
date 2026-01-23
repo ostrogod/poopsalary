@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { User, Session } from "@supabase/supabase-js"
-import { supabase, getCurrentUser, signUp, signIn, signOut, getUserProfile, createUserProfile, UserProfile } from "../lib/supabase-client"
+import { supabase, getCurrentUser, signUp, signIn, signOut, getUserProfile, createUserProfile, UserProfile, requestPasswordReset } from "../lib/supabase-client"
 
 interface AuthContextType {
   user: User | null
@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, currencyCode?: string, annualSalary?: number) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<void>
   clearError: () => void
   refreshProfile: () => Promise<void>
 }
@@ -106,6 +107,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const handleRequestPasswordReset = async (email: string) => {
+    try {
+      setError(null)
+      await requestPasswordReset(email)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al solicitar reseteo de contraseña"
+      setError(errorMessage)
+      throw err
+    }
+  }
+
   const clearError = () => setError(null)
 
   const refreshProfile = async () => {
@@ -130,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp: handleSignUp,
         signIn: handleSignIn,
         signOut: handleSignOut,
+        requestPasswordReset: handleRequestPasswordReset,
         clearError,
         refreshProfile,
       }}

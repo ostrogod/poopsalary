@@ -1,0 +1,303 @@
+```
+╔════════════════════════════════════════════════════════════════════════════╗
+║                 🔐 SISTEMA DE RESETEO DE CONTRASEÑA                       ║
+║                    Implementación Completada ✅                           ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ ARQUITECTURA DEL SISTEMA ──────────────────────────────────────────────┐
+│                                                                           │
+│                           📱 APLICACIÓN                                 │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                     SIDEBAR (sidebar.tsx)                        │  │
+│  │                                                                  │  │
+│  │  ┌─────────────┐                                                │  │
+│  │  │   LOGIN     │  ← Usuario hace clic                           │  │
+│  │  └─────────────┘     "¿Olvidaste tu contraseña?"               │  │
+│  │          │                                                      │  │
+│  │          ▼                                                      │  │
+│  │  ┌──────────────────────────────────────────────────────────┐  │  │
+│  │  │     FORGOT PASSWORD (forgot-password.tsx)                │  │  │
+│  │  │                                                          │  │  │
+│  │  │  📧 Email: ______________________ [Enviar]             │  │  │
+│  │  │                                                          │  │  │
+│  │  │  → requestPasswordReset(email)                          │  │  │
+│  │  │    [AuthContext] → [Supabase]                          │  │  │
+│  │  └──────────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                           │
+└───────────────────────────────────────────────────────────────────────────┘
+
+                                    📧
+                           Supabase envía email
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────────┐
+        │            EMAIL CON ENLACE DE RESETEO               │
+        │                                                      │
+        │  Haz clic: /auth/reset-password?code=XXX&type=... │
+        │                                                      │
+        └──────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────────┐
+        │        RESET PASSWORD PAGE (page.tsx)                │
+        │                                                      │
+        │  1️⃣ Valida el token                                 │
+        │  2️⃣ Muestra formulario de contraseña                │
+        │                                                      │
+        │  Nueva contraseña: ________ [👁]                   │
+        │  Confirmar:       ________ [👁]                   │
+        │                                                      │
+        │  [Actualizar contraseña]                            │
+        │                                                      │
+        │  → updatePassword(newPassword)                      │
+        │    [Supabase] actualiza contraseña                 │
+        │                                                      │
+        │  3️⃣ Redirige al login ✅                            │
+        │                                                      │
+        └──────────────────────────────────────────────────────┘
+
+
+┌─ FLUJO DE DATOS ────────────────────────────────────────────────────────┐
+│                                                                          │
+│  PASO 1: SOLICITUD                                                      │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ Usuario Input:  email = "user@example.com"                    │   │
+│  │      ▼                                                          │   │
+│  │ ForgotPassword Component:                                      │   │
+│  │      ▼                                                          │   │
+│  │ AuthContext.requestPasswordReset(email)                        │   │
+│  │      ▼                                                          │   │
+│  │ supabase.auth.resetPasswordForEmail(email, { redirectTo: url})│   │
+│  │      ▼                                                          │   │
+│  │ ✅ Email enviado                                               │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  PASO 2: VALIDACIÓN                                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ URL params: code=TOKEN, type=recovery                         │   │
+│  │      ▼                                                          │   │
+│  │ ResetPasswordPage:                                             │   │
+│  │   - Lee searchParams                                           │   │
+│  │   - Valida token existe y type === "recovery"                │   │
+│  │      ▼                                                          │   │
+│  │ ✅ Token válido → Muestra formulario                          │   │
+│  │ ❌ Token inválido → Muestra error                             │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  PASO 3: ACTUALIZACIÓN                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ Usuario Input: newPassword = "nuevaPass123"                  │   │
+│  │      ▼                                                          │   │
+│  │ Validaciones Cliente:                                          │   │
+│  │   ✓ Campos no vacíos                                          │   │
+│  │   ✓ Longitud >= 8 caracteres                                  │   │
+│  │   ✓ Contraseñas coinciden                                     │   │
+│  │      ▼                                                          │   │
+│  │ updatePassword(newPassword)                                    │   │
+│  │      ▼                                                          │   │
+│  │ supabase.auth.updateUser({ password: newPassword })          │   │
+│  │      ▼                                                          │   │
+│  │ ✅ Contraseña actualizada                                      │   │
+│  │      ▼                                                          │   │
+│  │ Redirige a "/" (login)                                        │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ ARCHIVOS Y ESTRUCTURA ────────────────────────────────────────────────┐
+│                                                                         │
+│  app/                                                                   │
+│  ├── components/                                                        │
+│  │   ├── forgot-password.tsx          ✨ [NUEVO]                      │
+│  │   ├── sidebar.tsx                  📝 [MODIFICADO]                 │
+│  │   ├── poop-salary-app.tsx                                           │
+│  │   └── ...otros...                                                   │
+│  │                                                                     │
+│  ├── auth/                                                              │
+│  │   └── reset-password/                                               │
+│  │       └── page.tsx                 ✨ [NUEVO]                      │
+│  │                                                                     │
+│  ├── context/                                                           │
+│  │   ├── auth-context.tsx             📝 [MODIFICADO]                 │
+│  │   └── language-context.tsx                                          │
+│  │                                                                     │
+│  ├── lib/                                                               │
+│  │   ├── supabase-client.ts           📝 [MODIFICADO]                 │
+│  │   └── ...otros...                                                   │
+│  │                                                                     │
+│  └── layout.tsx                                                         │
+│                                                                         │
+│  📄 DOCUMENTACIÓN NUEVA:                                               │
+│  ├── PASSWORD_RESET_GUIDE.md          📚 Guía completa               │
+│  ├── RESUMEN_RESETEO_CONTRASEÑA.md   📚 Resumen técnico             │
+│  └── CHECKLIST_RESETEO.md             ✅ Pasos a seguir              │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ FUNCIONES AGREGADAS ──────────────────────────────────────────────────┐
+│                                                                         │
+│  📍 supabase-client.ts                                                 │
+│  ─────────────────────────────────────────────────────────────────    │
+│                                                                         │
+│  1. requestPasswordReset(email: string)                               │
+│     └─ Solicita un enlace de reseteo de contraseña                   │
+│     └─ Configura redirectTo a /auth/reset-password                  │
+│     └─ Supabase envía email al usuario                              │
+│                                                                         │
+│  2. updatePassword(newPassword: string)                               │
+│     └─ Actualiza la contraseña del usuario actual                   │
+│     └─ Requiere estar autenticado                                   │
+│     └─ Retorna datos del usuario actualizado                        │
+│                                                                         │
+│  3. verifyPasswordToken(token: string)                                │
+│     └─ Verifica la validez del token de recuperación                │
+│     └─ Uso interno (automático en Supabase)                        │
+│                                                                         │
+│  📍 auth-context.tsx                                                  │
+│  ─────────────────────────────────────────────────────────────────    │
+│                                                                         │
+│  requestPasswordReset: (email: string) => Promise<void>              │
+│  └─ Expone la función de reseteo en el contexto de autenticación    │
+│  └─ Maneja errores y estados                                        │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ ESTADOS Y MANEJO DE ERRORES ──────────────────────────────────────────┐
+│                                                                         │
+│  FORGOT PASSWORD COMPONENT:                                            │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │ [input] → [validating] → [success] ✅                         │  │
+│  │           ↓                                                     │  │
+│  │         [error] ❌                                             │  │
+│  │           ↓                                                     │  │
+│  │       Muestra mensaje                                          │  │
+│  │       Usuario puede reintentar                                 │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  RESET PASSWORD PAGE:                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │ [loading] → [validating] → [token_valid] → [input]           │  │
+│  │                                ↓              ↓                 │  │
+│  │                         [token_invalid]   [updating]           │  │
+│  │                                ↓              ↓                 │  │
+│  │                             [error] ❌    [success] ✅         │  │
+│  │                                ↓              ↓                 │  │
+│  │                         Mostrar error    Redirigir login      │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ERRORES POSIBLES:                                                     │
+│  • Email no ingresado                                                 │
+│  • Email no registrado                                               │
+│  • Contraseña muy corta (< 8 caracteres)                            │
+│  • Contraseñas no coinciden                                         │
+│  • Token expirado (> 24 horas)                                      │
+│  • Token inválido/corrompido                                         │
+│  • Fallo en la conexión a Supabase                                  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ VALIDACIONES IMPLEMENTADAS ──────────────────────────────────────────┐
+│                                                                        │
+│  ✅ LADO DEL CLIENTE (Frontend)                                      │
+│     • Email no vacío                                                 │
+│     • Contraseña no vacía                                            │
+│     • Contraseña >= 8 caracteres                                     │
+│     • Contraseñas coinciden exactamente                              │
+│     • Formato de email válido (HTML5)                                │
+│                                                                        │
+│  ✅ LADO DEL SERVIDOR (Supabase)                                     │
+│     • Token de recuperación válido                                   │
+│     • Token no ha expirado (24 horas)                                │
+│     • Usuario existe                                                 │
+│     • Contraseña cumple políticas (si están configuradas)           │
+│     • Hash de contraseña almacenado de forma segura                 │
+│                                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ CARACTERÍSTICAS DE SEGURIDAD ──────────────────────────────────────────┐
+│                                                                         │
+│  🔒 Tokens de recuperación                                            │
+│     • Generados por Supabase                                          │
+│     • Válidos solo 24 horas (configurable)                           │
+│     • Se pueden usar solo una vez                                    │
+│     • Imposible predecir o fuerza bruta                              │
+│                                                                         │
+│  🔐 Contraseñas                                                        │
+│     • Hasheadas con bcrypt (Supabase)                                │
+│     • Nunca se envían en texto plano                                 │
+│     • Mínimo 8 caracteres requeridos                                 │
+│     • Se validan tanto en cliente como servidor                      │
+│                                                                         │
+│  🛡️  Comunicación                                                      │
+│     • HTTPS requerido en producción                                  │
+│     • Supabase usa encriptación TLS                                  │
+│     • Credenciales ANON_KEY (readonly)                               │
+│                                                                         │
+│  ⚠️  Limitaciones (Implementación de usuario):                         │
+│     • Rate limiting (no implementado, considerar agregar)            │
+│     • reCAPTCHA (no implementado, considerar agregar)                │
+│     • Auditoría de cambios (no implementado)                         │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ PRÓXIMOS PASOS ──────────────────────────────────────────────────────┐
+│                                                                        │
+│  1️⃣  CONFIGURAR SUPABASE (REQUERIDO)                                 │
+│     [ ] Ir a Supabase Console                                        │
+│     [ ] Authentication → URL Configuration                            │
+│     [ ] Agregar URL de redirect:                                     │
+│         http://localhost:3000/auth/reset-password (dev)             │
+│         https://tudominio.com/auth/reset-password (prod)            │
+│     [ ] Guardar cambios                                              │
+│                                                                        │
+│  2️⃣  PROBAR LOCALMENTE (RECOMENDADO)                                 │
+│     [ ] npm run dev                                                   │
+│     [ ] Acceder a http://localhost:3000                              │
+│     [ ] Seguir flujo completo de reseteo                            │
+│                                                                        │
+│  3️⃣  PERSONALIZAR (OPCIONAL)                                         │
+│     [ ] Traducciones en forgot-password.tsx                          │
+│     [ ] Estilo de componentes                                        │
+│     [ ] Mensajes de error                                            │
+│                                                                        │
+│  4️⃣  DEPLEGAR A PRODUCCIÓN (FINAL)                                   │
+│     [ ] npm run build                                                 │
+│     [ ] Agregar URL de producción en Supabase                        │
+│     [ ] Desplegar (Vercel, Netlify, etc)                            │
+│                                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ RESUMEN RÁPIDO ──────────────────────────────────────────────────────┐
+│                                                                        │
+│  Componente              Ubicación                    Estado           │
+│  ─────────────────────  ────────────────────────────  ─────────────   │
+│  forgot-password         /app/components/             ✅ Creado       │
+│  reset-password page     /app/auth/reset-password/    ✅ Creado       │
+│  auth functions          supabase-client.ts           ✅ Agregadas    │
+│  auth context            auth-context.tsx             ✅ Actualizado  │
+│  sidebar integration     sidebar.tsx                  ✅ Integrado    │
+│  supabase config         Pendiente                    ⏳ Requerido    │
+│  local testing           Pendiente                    ⏳ Próximo      │
+│  production deploy       Pendiente                    ⏳ Final        │
+│                                                                        │
+│  ESTADO ACTUAL: 🟢 CÓDIGO COMPLETADO - 🟡 LISTO PARA CONFIGURAR     │
+│                                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║  ¿DUDAS? Lee estos archivos:                                          ║
+║  • PASSWORD_RESET_GUIDE.md - Guía detallada                           ║
+║  • RESUMEN_RESETEO_CONTRASEÑA.md - Resumen técnico                   ║
+║  • CHECKLIST_RESETEO.md - Pasos a seguir                             ║
+╚════════════════════════════════════════════════════════════════════════╝
+```

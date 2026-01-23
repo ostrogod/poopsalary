@@ -2,10 +2,13 @@
 
 Una aplicación web divertida que calcula cuánto dinero ganas mientras estás en el baño. ¡Convierte tus momentos en el trono en ingresos medibles!
 
+> 🆕 **¡NUEVO!** Sistema de reseteo de contraseña implementado ✅ [Leer documentación](REFERENCIA_RAPIDA.md)
+
 ## ✨ Características
 
 ### 🔐 Sistema de Autenticación y Sesiones
 - **Login/Signup** con email y contraseña
+- **Reseteo de contraseña** por email (🆕)
 - **Base de datos en Supabase** para guardar datos permanentes
 - **Perfiles de usuario** con estadísticas personalizadas
 - **Barra lateral responsiva** con información del usuario
