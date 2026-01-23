@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
 
     // Escuchar cambios de autenticación
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event: any, session: Session | null) => {
+    const { data } = supabase.auth.onAuthStateChange(async (_event: any, session: Session | null) => {
       setUser(session?.user || null)
       if (session?.user) {
         const userProfile = await getUserProfile(session.user.id)
@@ -58,7 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
-      authListener?.subscription?.unsubscribe()
+      if (data?.subscription) {
+        data.subscription.unsubscribe()
+      }
     }
   }, [])
 

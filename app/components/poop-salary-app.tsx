@@ -42,8 +42,13 @@ export function PoopSalaryApp() {
       if (profile.annual_salary && profile.annual_salary > 0) {
         setAnnualSalary(profile.annual_salary)
       }
+    } else if (!user && appState !== "input") {
+      // Si el usuario se desconecta, volver al estado inicial
+      setAppState("input")
+      setElapsedSeconds(0)
+      setEarnedMoney(0)
     }
-  }, [user, profile])
+  }, [user, profile, appState])
 
   // Calculate per-second rate (2080 work hours/year = 7,488,000 seconds)
   const perSecondRate = annualSalary / (2080 * 60 * 60)

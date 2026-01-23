@@ -36,12 +36,19 @@ export function Sidebar() {
     }
   }, [profile])
 
-  // Cargar sesiones cuando el usuario esté autenticado
+  // Cargar sesiones cuando el usuario esté autenticado o cuando se abre el sidebar
   useEffect(() => {
     if (user && isOpen) {
       loadSessions()
     }
   }, [user, isOpen])
+
+  // Recargar sesiones cuando el perfil cambia (después de crear una nueva sesión)
+  useEffect(() => {
+    if (user && isOpen && profile) {
+      loadSessions()
+    }
+  }, [user, isOpen, profile?.total_earnings])
 
   const loadSessions = async () => {
     if (!user) return
